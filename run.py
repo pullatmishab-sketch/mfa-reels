@@ -24,7 +24,10 @@ ready = []   # (sheet_row, no, text, caption), sheet order = oldest first
 for i, r in enumerate(rows[1:], start=2):
     if get(r, 'status').upper() == 'READY' and get(r, 'text'): ready.append((i, get(r, 'no.') or str(i), get(r, 'text'), get(r, 'caption')))
 name = lambda row, no: f"mfa_{int(float(no)):05d}" if no.replace('.', '', 1).isdigit() else f"mfa_row{row}"
-posted = set(open(LOG).read().split()) if os.path.exists(LOG) else set()
+lines = [l.split() for l in open(LOG) if l.strip()] if os.path.exists(LOG) else []
+posted = {l[0] for l in lines}
+recent = sum(1 for l in lines if len(l) > 1 and time.time() - float(l[1]) < 86400)   # posts in last 24h (Instagram API cap is ~100/24h)
+MAX_24H = int(os.environ.get('MAX_24H', '95'))
 
 n = 0
 for row, no, text, cap in ready:                       # 1) render ahead
@@ -37,9 +40,9 @@ sha = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
 sent = 0
 for row, no, text, cap in ready:                       # 2) post oldest unposted READY reel(s)
     nm = name(row, no)
-    if sent >= POSTS: break
+    if sent >= POSTS or recent + sent >= MAX_24H: break
     if nm in posted or not os.path.exists(os.path.join(VID, nm + '.mp4')): continue
-    open(LOG, 'a').write(nm + '\n'); push(f'mark {nm} posted')   # log first: never double-post
+    open(LOG, 'a').write(f'{nm} {time.time():.0f}\n'); push(f'mark {nm} posted')   # log first: never double-post
     if n: time.sleep(20)                                          # let jsDelivr see the new commit
     body = json.dumps({'row': row, 'video_url': f'https://cdn.jsdelivr.net/gh/{REPO}@{sha}/videos/{nm}.mp4', 'caption': cap}).encode()
     urllib.request.urlopen(urllib.request.Request(POST_URL, body, {'Content-Type': 'application/json'}), timeout=120).read()
