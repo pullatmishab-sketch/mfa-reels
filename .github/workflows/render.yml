@@ -1,6 +1,6 @@
 name: MFA reels hourly
 on:
-  schedule: [{cron: '0 * * * *'}]
+  schedule: [{cron: '*/10 * * * *'}]
   workflow_dispatch:
 permissions: {contents: write}
 concurrency: {group: reels, cancel-in-progress: false}
