@@ -71,12 +71,12 @@ def render(text, out_mp4, audio=None, bg=None, duration=None):
         duration = float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', audio]).decode().strip())
     with tempfile.TemporaryDirectory() as t:
         ov = os.path.join(t, 'ov.png'); overlay(text, ov)
-        fc = (f"[0:v]scale={W}:{H}:flags=lanczos:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,noise=alls=3:allf=u[b];"
+        fc = (f"[0:v]scale={W}:{H}:flags=lanczos:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1[b];"
               f"[1:v]format=rgba,fade=t=in:st=0:d={c['fade']}:alpha=1[o];[b][o]overlay,format=yuv420p[v];"
               f"[2:a]afade=t=out:st={duration-c['audio_fade']:.2f}:d={c['audio_fade']},atrim=0:{duration:.2f}[a]")
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-loop', '1', '-framerate', '30', '-i', bg, '-loop', '1', '-framerate', '30', '-i', ov, '-i', audio,
-                        '-filter_complex', fc, '-map', '[v]', '-map', '[a]', '-t', f'{duration:.2f}', '-r', '30', '-c:v', 'libx264', '-preset', 'fast', '-crf', '14', '-maxrate', '4500k', '-bufsize', '9M', '-profile:v', 'high',
-                        '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out_mp4], check=True)
+                        '-filter_complex', fc, '-map', '[v]', '-map', '[a]', '-t', f'{duration:.2f}', '-r', '30', '-c:v', 'libx264', '-preset', 'fast', '-crf', '17',
+                        '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', out_mp4], check=True)
     return out_mp4
 
 if __name__ == '__main__':
