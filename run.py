@@ -33,10 +33,10 @@ from concurrent.futures import ThreadPoolExecutor
 todo = []
 for row, no, text, cap in ready:                       # 1) render ahead (parallel; re-render old low-quality files)
     nm0 = name(row, no); p = os.path.join(VID, nm0 + '.mp4')
-    if nm0 in posted or (os.path.exists(p) and os.path.exists(p + '.q2')) or len(todo) >= MAX_RENDER: continue
+    if nm0 in posted or (os.path.exists(p) and os.path.exists(p + '.q3')) or len(todo) >= MAX_RENDER: continue
     todo.append((text, p))
 def _r(t):
-    render(t[0], t[1]); open(t[1] + '.q2', 'w').close(); print('rendered', t[1])
+    render(t[0], t[1]); open(t[1] + '.q3', 'w').close(); print('rendered', t[1])
 with ThreadPoolExecutor(3) as ex: list(ex.map(_r, todo))
 n = len(todo)
 push(f'render {n} reels')
