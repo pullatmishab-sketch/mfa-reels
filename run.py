@@ -29,11 +29,16 @@ posted = {l[0] for l in lines}
 recent = sum(1 for l in lines if len(l) > 1 and time.time() - float(l[1]) < 86400)   # posts in last 24h (Instagram API cap is ~100/24h)
 MAX_24H = int(os.environ.get('MAX_24H', '95'))
 
-n = 0
-for row, no, text, cap in ready:                       # 1) render ahead
-    p = os.path.join(VID, name(row, no) + '.mp4')
-    if os.path.exists(p) or n >= MAX_RENDER: continue
-    render(text, p); n += 1; print('rendered', p)
+from concurrent.futures import ThreadPoolExecutor
+todo = []
+for row, no, text, cap in ready:                       # 1) render ahead (parallel; re-render old low-quality files)
+    nm0 = name(row, no); p = os.path.join(VID, nm0 + '.mp4')
+    if nm0 in posted or (os.path.exists(p) and os.path.exists(p + '.q2')) or len(todo) >= MAX_RENDER: continue
+    todo.append((text, p))
+def _r(t):
+    render(t[0], t[1]); open(t[1] + '.q2', 'w').close(); print('rendered', t[1])
+with ThreadPoolExecutor(3) as ex: list(ex.map(_r, todo))
+n = len(todo)
 push(f'render {n} reels')
 sha = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
 
